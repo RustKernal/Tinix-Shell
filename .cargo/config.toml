@@ -8,3 +8,15 @@ runner = "bootimage runner"
 
 [build]
 target = "x86_64.json"
+
+[package.metadata.bootimage]
+run-args = [
+    "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-serial", "stdio",
+]
+
+test-args = [
+    "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-serial", "stdio",
+]
+
+run-command = ["qemu-system-x86_69", "-drive", "format=raw,file={}", "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04",]
+test-timeout = 120
