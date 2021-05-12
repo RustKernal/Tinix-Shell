@@ -97,3 +97,8 @@ fn test_println_many() {
 fn test_init_kernal() {
     tinix_kernal::init_modules();
 }
+
+#[test_case]
+fn test_breakpoints() {
+    x86_64::instructions::interrupts::int3(); // new;
+}

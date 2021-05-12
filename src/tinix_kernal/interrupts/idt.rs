@@ -4,6 +4,7 @@ use x86_64::structures::idt::{
     InterruptDescriptorTable,
     InterruptStackFrame,
 };
+use crate::println;
 
 lazy_static! {
     static ref IDT : InterruptDescriptorTable = {
@@ -25,5 +26,5 @@ extern "x86-interrupt" fn double_fault(_info : &mut InterruptStackFrame, _ec : u
 }
 
 extern "x86-interrupt" fn breakpoint(_info : &mut InterruptStackFrame) {
-    panic!("Breakpoint:\n{:#?}",_info);
+    println!("Breakpoint:\n{:#?}",_info);
 }
