@@ -28,7 +28,7 @@ impl Terminal {
 
     fn new(color : ColorCode) -> Terminal {
         Terminal {
-            row     : SCREEN_HEIGHT - 2,
+            row     : SCREEN_HEIGHT - 1,
             col     : 0,
             buffer  : ScreenBuffer::text_mode80x25(),
             color   : color
@@ -44,9 +44,9 @@ impl Printer for Terminal {
     }
 
     fn print_u8(&mut self, b:u8) {
-        if b == b'\n' { self.newline(); return; }
+        if b == b'\n'               { self.newline(); return; }
         if self.col >= SCREEN_WIDTH { self.newline(); return; }
-        if b == b'\t' { self.tab();     return; }
+        if b == b'\t'               { self.tab();     return; }
 
         self.buffer.set_char(self.col, self.row, Char::new(b, self.color));
         self.col += 1;
@@ -57,7 +57,7 @@ impl Printer for Terminal {
         for row in 1..SCREEN_HEIGHT {
             for col in 0..SCREEN_WIDTH {
                 let character = self.buffer.get_char(col, row);
-                self.buffer.set_char(col,row,character);
+                self.buffer.set_char(col,row - 1,character);
             }
         }
         self.clearrow(SCREEN_HEIGHT - 1);

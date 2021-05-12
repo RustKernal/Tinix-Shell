@@ -61,6 +61,7 @@ pub extern "C" fn _start() -> ! {
 #[cfg(not(test))]
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
+    tinix_kernal::init_modules();
     println!("Hello World...");
     loop {}
 }
@@ -74,18 +75,25 @@ fn panic(info: &PanicInfo) -> ! {
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
+    println!("{}",info);
     loop {}
 }
 
-// #[test_case]
-// pub fn print_test() {
-//     println!("TEST");
-//     assert_eq!(Char::new(b'T',ColorCode::from_colors(Color::White, Color::Blue)), terminal::get_char(0,21));
-// }
+#[test_case]
+pub fn print_test() {
+    println!("TEST");
+    assert_eq!(Char::new(b'T',ColorCode::from_colors(Color::White, Color::Blue)), terminal::get_char(0,23));
+}
 
 #[test_case]
 fn test_println_many() {
     for _ in 0..200 {
         println!("test_println_many output");
+
     }
+}
+
+#[test_case]
+fn test_init_kernal() {
+    tinix_kernal::init_modules();
 }
