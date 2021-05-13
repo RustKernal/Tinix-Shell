@@ -24,13 +24,13 @@ use tinix::gfx::vga::{
 use tinix::gfx;
 
 use tinix::interrupts::pit::set_frequency;
+use tinix::allocation::memory::active_level_4_table;
 
 use core::panic::PanicInfo;
 
 use bootloader::BootInfo;
 use bootloader::entry_point;
-
-use alloc::boxed::Box;
+use x86_64::VirtAddr;
 
 entry_point!(shell_main);
 
@@ -77,14 +77,14 @@ pub fn shell_main(boot_info : &BootInfo)-> ! {
 #[no_mangle]
 pub fn shell_main(boot_info : &BootInfo) -> ! {
     tinix::init_modules(boot_info);
-    gfx::clear(Color::Blue);
-    println!("Hello World...");
+    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+    let l4_table = unsafe { active_level_4_table(phys_mem_offset) };
 
-    gfx::set_cell_color(0,0, Color::White, Color::Yellow);
-    gfx::set_cell_color(1,0, Color::White, Color::Blue);
-    set_frequency(1000);
-
-    let b : Box<u8> = Box::new(0); 
+    for (i, entry) in l4_table.iter().enumerate() {
+        if !entry.is_unused() {
+            println!("L4 Entry {}: {:?}", i, entry);
+        }
+    }
 
     loop {tinix::pause(1)}
 }
