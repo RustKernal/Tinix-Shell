@@ -1,0 +1,6 @@
+[submodule "tinix-core"]
+	path = tinix-core
+	url = https://github.com/RustKernal/tinix-core
+[submodule "tinix-alloc"]
+	path = tinix-alloc
+	url = https://github.com/RustKernal/tinix-alloc.git
