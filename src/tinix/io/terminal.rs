@@ -1,5 +1,6 @@
 use core::fmt::Write;
 use crate::io::printer::Printer;
+use x86_64::instructions::interrupts;
 use crate::gfx::vga::{
     ScreenBuffer, ColorCode, Char, SCREEN_HEIGHT, SCREEN_WIDTH, Color
 };
@@ -91,7 +92,9 @@ macro_rules! println {
 
 #[doc(hidden)]
 pub fn _print(args: core::fmt::Arguments) {
-    WRITER.lock().write_fmt(args).unwrap();
+    interrupts::without_interrupts(|| {
+        WRITER.lock().write_fmt(args).unwrap();
+    });
 }
 
 pub fn get_char(x:usize, y:usize) -> Char {

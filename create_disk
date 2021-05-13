@@ -1,0 +1,2 @@
+#!/bin/bash
+dd if=target/x86_64/debug/bootimage-tinix_shell.bin of=/dev/$1 && sync

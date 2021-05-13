@@ -1,5 +1,5 @@
 [package]
-name = "tinix"
+name = "tinix_shell"
 version = "0.1.0"
 authors = ["npex42 <npex42@gmail.com>"]
 edition = "2018"
@@ -11,8 +11,9 @@ spin = "0.5.2"
 volatile = "0.2.6"
 x86_64 = "0.13.2"
 uart_16550 = "0.2.0"
+linked_list_allocator = "0.8.0"
 
-tinix_kernal = {path = "src/tinix_kernal"}
+tinix = {path = "src/tinix"}
 
 [dependencies.lazy_static]
 version = "1.0"
@@ -23,3 +24,9 @@ test-args = [
     "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-serial", "stdio", "-display", "none"
 ]
 test-success-exit-code = 33         # (0x10 << 1) | 1
+
+
+
+# [[test]]
+# name = "stack_overflow"
+# harness = false

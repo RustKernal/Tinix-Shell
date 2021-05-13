@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use lazy_static::lazy_static;
+use spin::Mutex;
 use volatile::Volatile;
 
 const VGA_GFX_MODE_START             : usize = 0xA0000;
@@ -8,6 +10,12 @@ const VGA_COLOR_TEXT_MODE_START      : usize = 0xB8000;
 
 pub const SCREEN_HEIGHT : usize = 25;
 pub const SCREEN_WIDTH  : usize = 80;
+
+lazy_static! {
+    pub static ref GLOBAL_VGA_BUFFER : Mutex<&'static mut ScreenBuffer> = Mutex::new(
+        ScreenBuffer::text_mode80x25()
+    );
+}
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 #[repr(u8)]
@@ -113,8 +121,8 @@ impl ColorCode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
 pub struct Char {
-    code_point : u8, 
-    color : ColorCode
+    pub code_point : u8, 
+    pub color : ColorCode
 }
 
 impl Char {
@@ -130,6 +138,7 @@ impl Char {
     }
 }
 
+#[derive(Clone)]
 #[repr(transparent)]
 pub struct ScreenBuffer {
     data : [[Volatile<Char> ; SCREEN_WIDTH] ; SCREEN_HEIGHT]
@@ -168,3 +177,4 @@ impl ScreenBuffer {
         self.data[y][x].read().code_point
     }
 }
+

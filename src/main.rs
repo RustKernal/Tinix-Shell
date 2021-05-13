@@ -8,16 +8,31 @@
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
+extern crate alloc;
 //Imports
-use tinix_kernal::qemu::{QemuExitCode, exit_qemu};
-use tinix_kernal::{serial_print, serial_println, print, println};
-use tinix_kernal::io::terminal;
-use tinix_kernal::gfx::vga::{
-    Color, ColorCode, Char
+use tinix::qemu::{
+    QemuExitCode, exit_qemu
 };
+use tinix::{
+    serial_print, serial_println, print, println
+};
+
+use tinix::gfx::vga::{
+    ColorCode, Char, Color
+};
+
+use tinix::gfx;
+
+use tinix::interrupts::pit::set_frequency;
 
 use core::panic::PanicInfo;
 
+use bootloader::BootInfo;
+use bootloader::entry_point;
+
+use alloc::boxed::Box;
+
+entry_point!(shell_main);
 
 pub trait Testable {
     fn run(&self) -> ();
@@ -52,7 +67,7 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
 /// Entry point for `cargo test`
 #[cfg(test)]
 #[no_mangle]
-pub extern "C" fn _start() -> ! {
+pub fn shell_main(boot_info : &BootInfo)-> ! {
     test_main();
     loop {}
 }
@@ -60,10 +75,18 @@ pub extern "C" fn _start() -> ! {
 /// Entry point for `cargo run`
 #[cfg(not(test))]
 #[no_mangle]
-pub extern "C" fn _start() -> ! {
-    tinix_kernal::init_modules();
+pub fn shell_main(boot_info : &BootInfo) -> ! {
+    tinix::init_modules(boot_info);
+    gfx::clear(Color::Blue);
     println!("Hello World...");
-    loop {}
+
+    gfx::set_cell_color(0,0, Color::White, Color::Yellow);
+    gfx::set_cell_color(1,0, Color::White, Color::Blue);
+    set_frequency(1000);
+
+    let b : Box<u8> = Box::new(0); 
+
+    loop {tinix::pause(1)}
 }
 
 #[cfg(test)]
@@ -82,7 +105,7 @@ fn panic(info: &PanicInfo) -> ! {
 #[test_case]
 pub fn print_test() {
     println!("TEST");
-    assert_eq!(Char::new(b'T',ColorCode::from_colors(Color::White, Color::Blue)), terminal::get_char(0,23));
+    assert_eq!(Char::new(b'T',ColorCode::from_colors(Color::White, Color::Blue)), tinix::io::terminal::get_char(0,23));
 }
 
 #[test_case]
@@ -95,10 +118,23 @@ fn test_println_many() {
 
 #[test_case]
 fn test_init_kernal() {
-    tinix_kernal::init_modules();
+    tinix::init_modules_no_alloc();
 }
 
 #[test_case]
 fn test_breakpoints() {
     x86_64::instructions::interrupts::int3(); // new;
 }
+
+#[test_case]
+fn test_set_cell() {
+    gfx::set_cell_color(0, 0, Color::Black, Color::Cyan);
+    assert_eq!(gfx::get_bg(0,0),Color::Cyan);
+}
+
+#[test_case]
+fn test_clear() {
+    gfx::set_cell_color(0, 0, Color::Green, Color::Brown);
+    gfx::clear(Color::Blue);
+    assert_eq!(gfx::get_bg(0,0),Color::Blue);
+} 
