@@ -8,7 +8,6 @@
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
-extern crate alloc;
 //Imports
 use tinix::qemu::{
     QemuExitCode, exit_qemu
@@ -24,7 +23,6 @@ use tinix::gfx::vga::{
 use tinix::gfx;
 
 use tinix::interrupts::pit::set_frequency;
-use tinix::allocation::memory::active_level_4_table;
 
 use core::panic::PanicInfo;
 
@@ -77,15 +75,6 @@ pub fn shell_main(boot_info : &BootInfo)-> ! {
 #[no_mangle]
 pub fn shell_main(boot_info : &BootInfo) -> ! {
     tinix::init_modules(boot_info);
-    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
-    let l4_table = unsafe { active_level_4_table(phys_mem_offset) };
-
-    for (i, entry) in l4_table.iter().enumerate() {
-        if !entry.is_unused() {
-            println!("L4 Entry {}: {:?}", i, entry);
-        }
-    }
-
     loop {tinix::pause(1)}
 }
 
