@@ -8,7 +8,6 @@
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
-extern crate alloc;
 //Imports
 use tinix::qemu::{
     QemuExitCode, exit_qemu
@@ -29,8 +28,7 @@ use core::panic::PanicInfo;
 
 use bootloader::BootInfo;
 use bootloader::entry_point;
-
-use alloc::boxed::Box;
+use x86_64::VirtAddr;
 
 entry_point!(shell_main);
 
@@ -77,15 +75,6 @@ pub fn shell_main(boot_info : &BootInfo)-> ! {
 #[no_mangle]
 pub fn shell_main(boot_info : &BootInfo) -> ! {
     tinix::init_modules(boot_info);
-    gfx::clear(Color::Blue);
-    println!("Hello World...");
-
-    gfx::set_cell_color(0,0, Color::White, Color::Yellow);
-    gfx::set_cell_color(1,0, Color::White, Color::Blue);
-    set_frequency(1000);
-
-    let b : Box<u8> = Box::new(0); 
-
     loop {tinix::pause(1)}
 }
 
