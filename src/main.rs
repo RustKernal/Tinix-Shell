@@ -120,12 +120,12 @@ pub fn shell_main(boot_info : &'static BootInfo) -> ! {
         );
     }
 
-    let test = Box::new(0);
+    let test : Box<u128> = Box::new(10);
     println!("heap_value at {:p}", test);
 
     let mut vec = alloc::vec::Vec::new();
-    for i in 0..50000 {
-        vec.push(i as u8);
+    for i in 0..=500 {
+        vec.push(i as u128);
     }
     println!("vec at {:p}", vec.as_slice());
 
