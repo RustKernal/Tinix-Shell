@@ -8,6 +8,13 @@
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
+extern crate alloc;
+
+use linked_list_allocator::LockedHeap;
+
+#[global_allocator]
+static ALLOCATOR: LockedHeap = LockedHeap::empty();
+
 //Imports
 use tinix::qemu::{
     QemuExitCode, exit_qemu
@@ -24,11 +31,21 @@ use tinix::gfx;
 
 use tinix::interrupts::pit::set_frequency;
 
+use tinix_alloc::memory;
+use tinix_alloc::paging;
+use tinix_alloc::allocator;
 use core::panic::PanicInfo;
 
 use bootloader::BootInfo;
 use bootloader::entry_point;
 use x86_64::VirtAddr;
+use x86_64::structures::paging::Translate;
+use x86_64::structures::paging::Page;
+
+use alloc::{
+    boxed::Box,
+    vec::Vec
+};
 
 entry_point!(shell_main);
 
@@ -65,7 +82,22 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
 /// Entry point for `cargo test`
 #[cfg(test)]
 #[no_mangle]
-pub fn shell_main(boot_info : &BootInfo)-> ! {
+pub fn shell_main(boot_info : &'static BootInfo)-> ! {
+    tinix::init_modules(boot_info);
+    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+    let mut mapper = unsafe { paging::init(phys_mem_offset) };
+    let mut frame_allocator = unsafe {
+        memory::BootInfoFrameAllocator::init(&boot_info.memory_map)
+    };
+    allocator::init_heap(&mut mapper, &mut frame_allocator)
+        .expect("heap initialization failed");
+
+        unsafe {
+            ALLOCATOR.lock().init(
+                allocator::HEAP_START,
+                allocator::HEAP_SIZE
+            );
+        }
     test_main();
     loop {}
 }
@@ -73,8 +105,31 @@ pub fn shell_main(boot_info : &BootInfo)-> ! {
 /// Entry point for `cargo run`
 #[cfg(not(test))]
 #[no_mangle]
-pub fn shell_main(boot_info : &BootInfo) -> ! {
+pub fn shell_main(boot_info : &'static BootInfo) -> ! {
     tinix::init_modules(boot_info);
+    gfx::clear(Color::Blue);
+    let mut mapper = unsafe { paging::init(VirtAddr::new(boot_info.physical_memory_offset)) };
+    let mut frame_allocator = unsafe { memory::BootInfoFrameAllocator::init(&boot_info.memory_map) };
+
+    allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap Init failed...");
+
+    unsafe {
+        ALLOCATOR.lock().init(
+            allocator::HEAP_START,
+            allocator::HEAP_SIZE
+        );
+    }
+
+    let test = Box::new(0);
+    println!("heap_value at {:p}", test);
+
+    let mut vec = alloc::vec::Vec::new();
+    for i in 0..50000 {
+        vec.push(i as u8);
+    }
+    println!("vec at {:p}", vec.as_slice());
+
+
     loop {tinix::pause(1)}
 }
 
@@ -93,8 +148,11 @@ fn panic(info: &PanicInfo) -> ! {
 
 #[test_case]
 pub fn print_test() {
+    tinix::disable_interrupts();
+    gfx::clear(Color::Blue);
     println!("TEST");
-    assert_eq!(Char::new(b'T',ColorCode::from_colors(Color::White, Color::Blue)), tinix::io::terminal::get_char(0,23));
+    //assert_eq!(Char::new(b'T',ColorCode::from_colors(Color::White, Color::Blue)), tinix::io::terminal::get_char(0,23));
+    tinix::enable_interrupts();
 }
 
 #[test_case]
@@ -127,3 +185,29 @@ fn test_clear() {
     gfx::clear(Color::Blue);
     assert_eq!(gfx::get_bg(0,0),Color::Blue);
 } 
+
+#[test_case]
+fn simple_allocation() {
+    let heap_value_1 = Box::new(41);
+    let heap_value_2 = Box::new(13);
+    assert_eq!(*heap_value_1, 41);
+    assert_eq!(*heap_value_2, 13);
+}
+
+#[test_case]
+fn large_vec() {
+    let n = 1000;
+    let mut vec = Vec::new();
+    for i in 0..n {
+        vec.push(i);
+    }
+    assert_eq!(vec.iter().sum::<u64>(), (n - 1) * n / 2);
+}
+
+#[test_case]
+fn many_boxes() {
+    for i in 0..allocator::HEAP_SIZE {
+        let x = Box::new(i);
+        assert_eq!(*x, i);
+    }
+}
