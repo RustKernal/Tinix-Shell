@@ -10,6 +10,8 @@
 
 extern crate alloc;
 
+mod shell;
+
 use linked_list_allocator::LockedHeap;
 
 #[global_allocator]
@@ -35,6 +37,8 @@ use tinix_alloc::memory;
 use tinix_alloc::paging;
 use tinix_alloc::allocator;
 use core::panic::PanicInfo;
+
+use tinix::tasks::{Task, executor::Executor, keyboard};
 
 use bootloader::BootInfo;
 use bootloader::entry_point;
@@ -130,7 +134,23 @@ pub fn shell_main(boot_info : &'static BootInfo) -> ! {
     println!("vec at {:p}", vec.as_slice());
 
 
+    let mut exec = Executor::new();
+    exec.spawn(Task::new(shell::shell_task()));
+    gfx::clear(Color::Blue);
+    exec.run();
+    
+    
+
     loop {tinix::pause(1)}
+}
+
+async fn async_number() -> u32 {
+    42
+}
+
+async fn example_task() {
+    let number = async_number().await;
+    println!("async number: {}", number);
 }
 
 #[cfg(test)]
