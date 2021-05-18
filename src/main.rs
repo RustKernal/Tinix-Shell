@@ -123,16 +123,15 @@ pub fn shell_main(boot_info : &'static BootInfo) -> ! {
             allocator::HEAP_SIZE
         );
     }
+    let default_color = (Color::White, Color::Blue);
+    gfx::clear(Color::Blue);
+    gfx::draw_string(0,0,"==== TINIX V0.1.0a ====",default_color);
+    gfx::draw_string(0,1,"Screen Resolution: \x0280\x03x\x0225...",default_color);
+    gfx::draw_string(0,2,"Heap Size: \x0e100KiB...",default_color);
+    gfx::draw_string(0,3,"=======================",default_color);
 
-    let test : Box<u128> = Box::new(10);
-    println!("heap_value at {:p}", test);
-
-    let mut vec = alloc::vec::Vec::new();
-    for i in 0..=500 {
-        vec.push(i as u128);
-    }
-    println!("vec at {:p}", vec.as_slice());
-
+    gfx::draw_rect(0,4,10,1, Color::Green);
+    gfx::draw_string(11,4, " | 100% ", default_color);
 
     let mut exec = Executor::new();
     exec.spawn(Task::new(shell::shell_task()));
