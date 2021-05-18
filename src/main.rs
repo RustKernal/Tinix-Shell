@@ -37,8 +37,9 @@ use tinix_alloc::memory;
 use tinix_alloc::paging;
 use tinix_alloc::allocator;
 use core::panic::PanicInfo;
+use tinix::gfx::vga::Pixel;
 
-use tinix::tasks::{Task, executor::Executor, keyboard};
+//use tinix::tasks::{Task, executor::Executor, keyboard};
 
 use bootloader::BootInfo;
 use bootloader::entry_point;
@@ -111,7 +112,8 @@ pub fn shell_main(boot_info : &'static BootInfo)-> ! {
 #[no_mangle]
 pub fn shell_main(boot_info : &'static BootInfo) -> ! {
     tinix::init_modules(boot_info);
-    gfx::clear(Color::Blue);
+    gfx::set_gfx_mode(tinix::gfx::vga::VgaMode::GFX_320x200);
+    gfx::clear(Pixel::from_color(Color::Blue));
     let mut mapper = unsafe { paging::init(VirtAddr::new(boot_info.physical_memory_offset)) };
     let mut frame_allocator = unsafe { memory::BootInfoFrameAllocator::init(&boot_info.memory_map) };
 
@@ -123,22 +125,15 @@ pub fn shell_main(boot_info : &'static BootInfo) -> ! {
             allocator::HEAP_SIZE
         );
     }
-    let default_color = (Color::White, Color::Blue);
-    gfx::clear(Color::Blue);
-    gfx::draw_string(0,0,"==== TINIX V0.1.0a ====",default_color);
-    gfx::draw_string(0,1,"Screen Resolution: \x0280\x03x\x0225...",default_color);
-    gfx::draw_string(0,2,"Heap Size: \x0e100KiB...",default_color);
-    gfx::draw_string(0,3,"=======================",default_color);
-
-    gfx::draw_rect(0,4,10,1, Color::Green);
-    gfx::draw_string(11,4, " | 100% ", default_color);
-
-    let mut exec = Executor::new();
-    exec.spawn(Task::new(shell::shell_task()));
-    gfx::clear(Color::Blue);
-    exec.run();
     
+
+    //let mut exec = Executor::new();
+    //exec.spawn(Task::new(shell::shell_task()));
+    gfx::clear(Pixel::from_color(Color::Blue));
+    //exec.run();
+
     
+    shell::shell_task();
 
     loop {tinix::pause(1)}
 }
@@ -168,7 +163,7 @@ fn panic(info: &PanicInfo) -> ! {
 #[test_case]
 pub fn print_test() {
     tinix::disable_interrupts();
-    gfx::clear(Color::Blue);
+    gfx::clear(Pixel::from_color(Color::Blue));
     println!("TEST");
     //assert_eq!(Char::new(b'T',ColorCode::from_colors(Color::White, Color::Blue)), tinix::io::terminal::get_char(0,23));
     tinix::enable_interrupts();
@@ -201,7 +196,7 @@ fn test_set_cell() {
 #[test_case]
 fn test_clear() {
     gfx::set_cell_color(0, 0, Color::Green, Color::Brown);
-    gfx::clear(Color::Blue);
+    gfx::clear(Pixel::from_color(Color::Blue));
     assert_eq!(gfx::get_bg(0,0),Color::Blue);
 } 
 
