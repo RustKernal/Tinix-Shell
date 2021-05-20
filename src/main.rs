@@ -5,12 +5,12 @@
 //We also can't use the normal Main entry point
 #![no_main] 
 #![feature(custom_test_frameworks)]
-#![test_runner(crate::test_runner)]
+#![test_runner(crate::tests::test_runner)]
 #![reexport_test_harness_main = "test_main"]
-
 extern crate alloc;
 
 mod shell;
+mod tests;
 
 use linked_list_allocator::LockedHeap;
 
@@ -39,6 +39,8 @@ use tinix_alloc::allocator;
 use core::panic::PanicInfo;
 use tinix::gfx::vga::Pixel;
 
+
+
 //use tinix::tasks::{Task, executor::Executor, keyboard};
 
 use bootloader::BootInfo;
@@ -47,42 +49,10 @@ use x86_64::VirtAddr;
 use x86_64::structures::paging::Translate;
 use x86_64::structures::paging::Page;
 
-use alloc::{
-    boxed::Box,
-    vec::Vec
-};
 
 entry_point!(shell_main);
 
-pub trait Testable {
-    fn run(&self) -> ();
-}
 
-impl<T> Testable for T
-where
-    T: Fn(),
-{
-    fn run(&self) {
-        serial_print!("{}...\t", core::any::type_name::<T>());
-        self();
-        serial_println!("[ok]");
-    }
-}
-
-pub fn test_runner(tests: &[&dyn Testable]) {
-    serial_println!("Running {} tests", tests.len());
-    for test in tests {
-        test.run();
-    }
-    exit_qemu(QemuExitCode::Success);
-}
-
-pub fn test_panic_handler(info: &PanicInfo) -> ! {
-    serial_println!("[failed]\n");
-    serial_println!("Error: {}\n", info);
-    exit_qemu(QemuExitCode::Failed);
-    loop {}
-}
 
 /// Entry point for `cargo test`
 #[cfg(test)]
@@ -112,8 +82,8 @@ pub fn shell_main(boot_info : &'static BootInfo)-> ! {
 #[no_mangle]
 pub fn shell_main(boot_info : &'static BootInfo) -> ! {
     tinix::init_modules(boot_info);
-    gfx::set_gfx_mode(tinix::gfx::vga::VgaMode::GFX_320x200);
-    gfx::clear(Pixel::from_color(Color::Blue));
+    //gfx::set_gfx_mode(tinix::gfx::vga::VgaMode::TEXT_80x25);
+    gfx::clear(Color::Blue);
     let mut mapper = unsafe { paging::init(VirtAddr::new(boot_info.physical_memory_offset)) };
     let mut frame_allocator = unsafe { memory::BootInfoFrameAllocator::init(&boot_info.memory_map) };
 
@@ -129,7 +99,7 @@ pub fn shell_main(boot_info : &'static BootInfo) -> ! {
 
     //let mut exec = Executor::new();
     //exec.spawn(Task::new(shell::shell_task()));
-    gfx::clear(Pixel::from_color(Color::Blue));
+    gfx::clear(Color::Blue);
     //exec.run();
 
     
@@ -147,81 +117,21 @@ async fn example_task() {
     println!("async number: {}", number);
 }
 
-#[cfg(test)]
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    test_panic_handler(info)
+
+
+pub fn get_used() -> usize {
+    ALLOCATOR.lock().used()
 }
 
-#[cfg(not(test))]
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    println!("{}",info);
-    loop {}
+pub fn get_free() -> usize {
+    ALLOCATOR.lock().free()
 }
 
-#[test_case]
-pub fn print_test() {
-    tinix::disable_interrupts();
-    gfx::clear(Pixel::from_color(Color::Blue));
-    println!("TEST");
-    //assert_eq!(Char::new(b'T',ColorCode::from_colors(Color::White, Color::Blue)), tinix::io::terminal::get_char(0,23));
-    tinix::enable_interrupts();
+pub fn get_size() -> usize {
+    ALLOCATOR.lock().size()
 }
 
-#[test_case]
-fn test_println_many() {
-    for _ in 0..200 {
-        println!("test_println_many output");
-
-    }
-}
-
-#[test_case]
-fn test_init_kernal() {
-    tinix::init_modules_no_alloc();
-}
-
-#[test_case]
-fn test_breakpoints() {
-    x86_64::instructions::interrupts::int3(); // new;
-}
-
-#[test_case]
-fn test_set_cell() {
-    gfx::set_cell_color(0, 0, Color::Black, Color::Cyan);
-    assert_eq!(gfx::get_bg(0,0),Color::Cyan);
-}
-
-#[test_case]
-fn test_clear() {
-    gfx::set_cell_color(0, 0, Color::Green, Color::Brown);
-    gfx::clear(Pixel::from_color(Color::Blue));
-    assert_eq!(gfx::get_bg(0,0),Color::Blue);
-} 
-
-#[test_case]
-fn simple_allocation() {
-    let heap_value_1 = Box::new(41);
-    let heap_value_2 = Box::new(13);
-    assert_eq!(*heap_value_1, 41);
-    assert_eq!(*heap_value_2, 13);
-}
-
-#[test_case]
-fn large_vec() {
-    let n = 1000;
-    let mut vec = Vec::new();
-    for i in 0..n {
-        vec.push(i);
-    }
-    assert_eq!(vec.iter().sum::<u64>(), (n - 1) * n / 2);
-}
-
-#[test_case]
-fn many_boxes() {
-    for i in 0..allocator::HEAP_SIZE {
-        let x = Box::new(i);
-        assert_eq!(*x, i);
-    }
+pub fn get_available() -> usize {
+    let alloc = ALLOCATOR.lock();
+    alloc.size() - alloc.used() 
 }
