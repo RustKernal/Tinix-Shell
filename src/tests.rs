@@ -8,6 +8,7 @@ use tinix::qemu::{QemuExitCode, exit_qemu};
 use tinix::gfx::vga::{Color};
 use tinix::gfx;
 use tinix_alloc::allocator;
+use tinix::gfx::drawables::Drawable;
 
 
 use core::panic::PanicInfo;
@@ -52,7 +53,9 @@ fn panic(info: &PanicInfo) -> ! {
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    println!("{}",info);
+    let window = tinix::gfx::windows::panic_window::from(info);
+    window.draw_self();
+    tinix::gfx::swap();
     serial_println!("{}",info);
     loop {}
 }
