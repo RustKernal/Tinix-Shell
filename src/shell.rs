@@ -3,28 +3,32 @@ use tinix::gfx::drawables::{Drawable};
 use tinix::gfx::widgets::ProgressBar;
 use tinix::gfx::vga::Color;
 use tinix;
-use tinix::gfx::vga::Pixel;
+use tinix::interrupts::global_timer;
 
 use alloc::{
-    boxed::Box,
-    vec::Vec
+    vec::Vec,
+    string::String
 };
 
 use num_format::{Buffer, Locale};
 
-static mut frame_num : usize = 0;
+static mut FRAME_NUM : usize = 0;
 
-static mut v1 : Vec<Block> = Vec::new();
+static mut _V1 : Vec<Block> = Vec::new();
 
 
+#[allow(dead_code)]
 pub fn shell_task() -> ! {
-    let mut default_color = (Color::White, Color::Blue);
+    let mut _data : u8 = 0;
+    let mut _name : String = String::new();
+
+    let default_color = (Color::White, Color::Blue);
     tinix::set_tick_rate(1000);
     let mut buf = Buffer::default();
     buf.write_formatted(&super::get_size(), &Locale::en);
     let s = buf.as_str();
 
-    let mut progress = ProgressBar::new(0,5,Color::White,0,1024,16);
+    let mut progress = ProgressBar::new(0,5,Color::White,0,256,16);
 
     loop {
     gfx::clear(Color::Blue);
@@ -33,15 +37,20 @@ pub fn shell_task() -> ! {
     gfx::draw_string!(0,2, default_color, "Screen Resolution: {}...",gfx::Blue::new("80x25"));
     gfx::draw_string!(0,3,default_color,"Heap Size: {}B", s);
     gfx::draw_string(0,4,"=======================",default_color);
-    progress.set_value(unsafe {frame_num});
+    gfx::draw_string!(0,7,default_color, "FS Read \"{}\": {}",_name ,_data);
+    progress.set_value(unsafe {FRAME_NUM});
     progress.set_text_color(default_color);
     progress.draw_self();
-    unsafe {frame_num += 1; }//frame_num %= 16}
+
+    gfx::draw_string!(0,6,default_color,"Uptime: {} Seconds ({} Minutes)",global_timer::get_seconds(), global_timer::get_minutes());
+
+    unsafe {FRAME_NUM += 1; }//FRAME_NUM %= 16}
     gfx::swap();
     tinix::pause(16);
     }
 }
 
+#[allow(dead_code)]
 struct Block {
     bytes : [usize ; 16]
 }

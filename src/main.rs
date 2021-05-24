@@ -7,10 +7,13 @@
 #![feature(custom_test_frameworks)]
 #![test_runner(crate::tests::test_runner)]
 #![reexport_test_harness_main = "test_main"]
+#![allow(dead_code)]
+
 extern crate alloc;
 
 mod shell;
 mod tests;
+mod tvm;
 
 use linked_list_allocator::LockedHeap;
 

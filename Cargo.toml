@@ -16,6 +16,7 @@ num-format = { version = "0.4", default-features = false }
 
 tinix = {path = "tinix-core"}
 tinix_alloc = {path = "tinix-alloc"}
+tinix_fs = {path = "tinix_fs"}
 
 [dependencies.lazy_static]
 version = "1.0"
