@@ -105,6 +105,7 @@ pub fn shell_main(boot_info : &'static BootInfo) -> ! {
     gfx::clear(Color::Blue);
     //exec.run();
 
+    tinix::set_tick_rate(1000);
     
     shell::shell_task();
 
